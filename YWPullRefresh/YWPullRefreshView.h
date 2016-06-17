@@ -12,10 +12,8 @@ UIKIT_EXTERN const CGFloat YWPullRefreshHeight;
 UIKIT_EXTERN const CGFloat YWPullRefreshFastAnimationDuration;
 UIKIT_EXTERN const CGFloat YWPullRefreshSlowAnimationDuration;
 
-UIKIT_EXTERN NSString *const YWPullRefreshUpdatedTimeKey;
 UIKIT_EXTERN NSString *const YWPullRefreshContentOffset;
 UIKIT_EXTERN NSString *const YWPullRefreshContentSize;
-UIKIT_EXTERN NSString *const YWPullRefreshPanState;
 
 UIKIT_EXTERN NSString *const YWPullRefreshStateIdleText;
 UIKIT_EXTERN NSString *const YWPullRefreshStatePullingText;
@@ -41,10 +39,6 @@ typedef enum {
 
 /** 正在刷新的回调 */
 @property (copy, nonatomic) void (^refreshingBlock)();
-/** 设置回调对象和回调方法 */
-//- (void)setRefreshingTarget:(id)target refreshingAction:(SEL)action;
-//@property (weak, nonatomic) id refreshingTarget;
-//@property (assign, nonatomic) SEL refreshingAction;
 
 /** 刷新控件的状态 */
 @property (assign, nonatomic) YWPullRefreshState state;

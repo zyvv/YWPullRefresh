@@ -8,11 +8,24 @@
 
 #import "YWPullRefreshView.h"
 #import "UIScrollView+YWPullRefresh.h"
+
+#import <QuartzCore/CATransform3D.h>
+
+const CGFloat YWPullRefreshingHeight = 54.0;
+const CGFloat YWPullRefreshFastAnimationDuration = 0.25;
+const CGFloat YWPullRefreshSlowAnimationDuration = 0.4;
+
+NSString *const YWPullRefreshContentOffset = @"contentOffset";
+NSString *const YWPullRefreshContentSize = @"contentSize";
+
 @interface YWPullRefreshView()
 /** 记录scrollView刚开始的inset */
 @property (assign, nonatomic) UIEdgeInsets scrollViewOriginalInset;
 /** 父控件 */
 @property (weak, nonatomic) UIScrollView *scrollView;
+
+@property (nonatomic, strong) UIImageView *animationImageView;
+
 @end
 
 @implementation YWPullRefreshView
@@ -23,9 +36,14 @@
     if (self = [super initWithFrame:frame]) {
         // 基本属性
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        self.backgroundColor = [UIColor clearColor];
+        self.backgroundColor = [UIColor yellowColor];
         // 设置为默认状态
         self.state = YWPullRefreshStateIdle;
+        
+        self.animationImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 50, 50)];
+        self.animationImageView.backgroundColor = [UIColor redColor];
+        
+        [self addSubview:self.animationImageView];
     }
     return self;
 }
@@ -52,7 +70,7 @@
         // 记录UIScrollView最开始的contentInset
         self.scrollViewOriginalInset = self.scrollView.contentInset;
         
-        self.yw_h = YWPullRefreshHeight;
+        self.yw_h = _scrollView.yw_h;
     }
 }
 
@@ -68,9 +86,21 @@
 {
     [super layoutSubviews];
     
+    self.animationImageView.frame = CGRectMake((CGRectGetWidth(self.bounds) - YWPullRefreshingHeight) /2, (CGRectGetHeight(self.bounds) - YWPullRefreshingHeight), YWPullRefreshingHeight, YWPullRefreshingHeight);
     // 设置自己的位置
     self.yw_y = - self.yw_h;
+}
 
+- (void)setPullingPercent:(CGFloat)pullingPercent
+{
+    _pullingPercent = pullingPercent;
+    
+    if (_pullingPercent >= 1.0) {
+        [self refreshingAnimation];
+        //        self.yw_h = _scrollView.yw_offsetY;
+    } else {
+        [self willRefreshingAnimation];
+    }
 }
 
 #pragma mark KVO属性监听
@@ -102,9 +132,9 @@
     if (offsetY >= happenOffsetY) return;
     
     // 普通 和 即将刷新 的临界点
-    CGFloat normal2pullingOffsetY = happenOffsetY - self.yw_h;
+    CGFloat normal2pullingOffsetY = happenOffsetY - YWPullRefreshingHeight;
     if (_scrollView.isDragging) {
-        self.pullingPercent = (happenOffsetY - offsetY) / self.yw_h;
+        self.pullingPercent = (happenOffsetY - offsetY) / YWPullRefreshingHeight;
         
         if (self.state == YWPullRefreshStateIdle && offsetY < normal2pullingOffsetY) {
             // 转为即将刷新状态
@@ -118,8 +148,19 @@
         // 开始刷新
         self.state = YWPullRefreshStateRefreshing;
     } else {
-        self.pullingPercent = (happenOffsetY - offsetY) / self.yw_h;
+        self.pullingPercent = (happenOffsetY - offsetY) / YWPullRefreshingHeight;
     }
+    
+    //    NSLog(@"百分比： %.2f", self.pullingPercent);
+}
+
+
+- (void)willRefreshingAnimation
+{
+}
+
+- (void)refreshingAnimation
+{
 }
 
 #pragma mark - 公共方法
@@ -161,7 +202,7 @@
                 // 恢复inset和offset
                 [UIView animateWithDuration:YWPullRefreshSlowAnimationDuration delay:0.0 options:UIViewAnimationOptionAllowUserInteraction|UIViewAnimationOptionBeginFromCurrentState animations:^{
                     // 修复top值不断累加
-                    _scrollView.yw_insetT -= self.yw_h;
+                    _scrollView.yw_insetT -= YWPullRefreshingHeight;
                 } completion:nil];
             }
             break;
@@ -170,7 +211,7 @@
         case YWPullRefreshStateRefreshing: {
             [UIView animateWithDuration:YWPullRefreshFastAnimationDuration delay:0.0 options:UIViewAnimationOptionAllowUserInteraction|UIViewAnimationOptionBeginFromCurrentState animations:^{
                 // 增加滚动区域
-                CGFloat top = _scrollViewOriginalInset.top + self.yw_h;
+                CGFloat top = _scrollViewOriginalInset.top + YWPullRefreshingHeight;
                 _scrollView.yw_insetT = top;
                 
                 // 设置滚动位置

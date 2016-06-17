@@ -7,6 +7,7 @@
 //
 
 #import "UIScrollView+YWPullRefresh.h"
+#import <objc/runtime.h>
 
 @implementation UIScrollView (YWExtension)
 
@@ -184,5 +185,43 @@
 
 
 @implementation UIScrollView (YWPullRefresh)
+
+- (YWPullRefreshView *)pullRefreshingBlock:(void (^)())block;
+{
+    YWPullRefreshView *pullRefreshView = [self addPullRefreshView];
+    pullRefreshView.refreshingBlock = block;
+    return pullRefreshView;
+}
+
+- (YWPullRefreshView *)addPullRefreshView
+{
+    YWPullRefreshView *pullRefreshView = [[YWPullRefreshView alloc] init];
+    self.pullRefreshView = pullRefreshView;
+    
+    return pullRefreshView;
+}
+
+#pragma mark header
+static char YWPullRefreshViewKey;
+
+- (void)setPullRefreshView:(YWPullRefreshView *)pullRefreshView
+{
+    if (pullRefreshView != self.pullRefreshView) {
+        [self.pullRefreshView removeFromSuperview];
+        
+        [self willChangeValueForKey:@"pullRefreshView"];
+        objc_setAssociatedObject(self, &YWPullRefreshViewKey,
+                                 pullRefreshView,
+                                 OBJC_ASSOCIATION_ASSIGN);
+        [self didChangeValueForKey:@"pullRefreshView"];
+        
+        [self addSubview:pullRefreshView];
+    }
+}
+
+- (YWPullRefreshView *)pullRefreshView
+{
+    return objc_getAssociatedObject(self, &YWPullRefreshViewKey);
+}
 
 @end
